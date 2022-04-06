@@ -78,6 +78,14 @@ def compute_solution(C, files_info, targets, compilation_tree_per_target):
         t += 1
         
         
+def clean_compilation_tree(compilation_tree):
+    idx_to_remove = []
+    for i in range(len(compilation_tree)):
+        if(len(compilation_tree[i]) == 0): idx_to_remove.append(i)
+    
+    idx_to_remove.append(i)
+    
+    for idx in idx_to_remove: del compilation_tree[i]
 
 #%% Debug/Visualization function
 
