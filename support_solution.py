@@ -86,6 +86,24 @@ def clean_compilation_tree(compilation_tree):
     idx_to_remove.append(i)
     
     for idx in idx_to_remove: del compilation_tree[i]
+    
+    
+def choose_file_by_compilation_time(file_list, files_info):
+    """
+    Given a list of file return the one with the lowest compilation time and remove it from the list
+    """
+    
+    c_min = 1e9
+    
+    for i in range(len(file_list)):
+        file = file_list[i]
+        if(files_info[file]['c'] < c_min):
+            c_min = files_info[file]['c']
+            c_min_idx = i
+    
+    c_min_file = file_list.pop(i)
+            
+    return c_min_file
 
 #%% Debug/Visualization function
 
