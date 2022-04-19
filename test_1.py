@@ -3,7 +3,7 @@ import numpy as np
 from support_data_extraction import get_file, extract_info
 
 from support_solution import create_compilation_tree, sort_target_by_attribute, create_compilation_tree_per_targets
-from support_solution import clean_compilation_tree, choose_file_by_compilation_time
+from support_solution import clean_compilation_tree, choose_file_by_compilation_time, remove_file_from_dependecies_list
 from support_solution import compute_layers_string, show_layers
 
 #%%
@@ -13,6 +13,8 @@ data = get_file()
 
 # Extract info
 C, T, S, files_info, targets = extract_info(data[0])
+files_info_backup = extract_info(data[0])[3]
+
 
 # Sort targets by attribute. Targets is intended as the target file to compile
 # attribute = 'points' 
@@ -135,6 +137,8 @@ while(True):
         
         # If I finisg a replication 
         if(files_info[file]['r'] <= 0): 
+            print(t, "\tFinish replication files: ", file)
+            
             # Set the replicated flag to True
             files_info[file]['replicated'] = True
             
@@ -142,7 +146,8 @@ while(True):
             for files_compiled in files_compiled_per_server: 
                 if file not in files_compiled: files_compiled.append(file)
             
-            # N.b. the two operation are redundant in some way. TODO improve mantaining only 1
+            # Remove the file from the dependecies list of all files since it is replicated
+            remove_file_from_dependecies_list(file, files_info)
             
             idx_to_remove.append(j)
     
@@ -161,22 +166,52 @@ while(True):
         for i in range(len(idx_server_to_do)):
             idx_server = idx_server_to_do[i]
             finish_file = current_elaboration[idx_server]
+            print(t, "\tFinish compilation file: ", finish_file)
             
             # Add the files to the current files compiled in that server
-            files_compiled_per_server[idx_server].append(current_elaboration[finish_file])
+            files_compiled_per_server[idx_server].append(current_elaboration[idx_server])
             
             # Check if I am already replicating the file. If not add to the replication files list
             if(files_info[finish_file]['replicated'] == False and finish_file not in files_to_replicate_list):
-                files_to_replicate_list.append(files_to_replicate_list)
+                files_to_replicate_list.append(finish_file)
             
             
             # Choose the last layer, Select the file with the minor compilation time, Assign the file to the server
-            tmp_layer = tmp_compilation_tree_list[idx_server][-1]
-            tmp_file = choose_file_by_compilation_time(tmp_layer, files_info)
+            while(True):
+                tmp_layer = tmp_compilation_tree_list[idx_server][-1]
+                tmp_file = choose_file_by_compilation_time(tmp_layer, files_info)
+                
+                # Check if the file is not replicated
+                if(files_info[tmp_file]['replicated'] == False): 
+                    file_is_good = False
+                    
+                    # Check if the file is currently replicating
+                    if(file in files_to_replicate_list):
+                        # Select the files only if the remaining replication time is higher than the current compilation time 
+                        if(files_info[tmp_file]['r'] > files_info[tmp_file]['c']): file_is_good = True
+                        
+                        # Check dependencies of the file
+                        if(len(files_info[tmp_file]['dependencies_list']) == 0): # IF it has no dependencies it is ok
+                            file_is_good = True
+                        else: # If it has dependencies check if they are compiled in the server 
+                            for dependency_file in files_info[tmp_file]['dependencies_list']: # Iterate through files
+                                if(dependency_file not in files_compiled_per_server[idx_server]): # PROBLEM. The file needed is not in the compiled files
+                                    file_is_good = False
+                                    
+                        # If the checks are passed select the file for the compilation
+                        if(file_is_good): break
+                            
+                    
+                else: # If it is replicated pass to another file
+                    # Check if files remaining in th ecurrent layer. If not remove it
+                    if(len(tmp_layer) <= 0): clean_compilation_tree(tmp_compilation_tree_list[idx_server])
+                        
+            
+            
             current_elaboration[idx_server] = tmp_file
             time_for_current_elaboration[i] = files_info[tmp_file]['c']
             solution_string += "{} {}\n".format(tmp_file, i)
             
         
-    if(t > 20): break
+    if(t >= 20): break
     

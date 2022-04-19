@@ -90,9 +90,10 @@ def clean_compilation_tree(compilation_tree):
     for idx in idx_to_remove: del compilation_tree[i]
     
     
-def choose_file_by_compilation_time(file_list, files_info):
+def choose_file_by_compilation_time(file_list, files_info, remove_file_from_list = True):
     """
-    Given a list of file return the one with the lowest compilation time and REMOVE it from the list
+    Given a list of file return the one with the lowest compilation time. 
+    If remove_file_from_list is set to True it REMOVE the file from the list
     """
     
     c_min = 1e9
@@ -104,9 +105,24 @@ def choose_file_by_compilation_time(file_list, files_info):
             c_min = files_info[file]['c']
             c_min_idx = i
     
-    c_min_file = file_list.pop(c_min_idx)
+    if(remove_file_from_list):
+        c_min_file = file_list.pop(c_min_idx)
+    else:
+        c_min_file[c_min_idx]
             
     return c_min_file
+
+
+def remove_file_from_dependecies_list(file_to_remove, files_info):
+    """
+    Given the files info dictionary the function remove the given file from the dependencies of all the file.
+    Used when a file is replicated
+    """
+    
+    for file in files_info:
+        if(file_to_remove in files_info[file]['dependencies_list']): 
+            files_info[file]['dependencies_list'].remove(file_to_remove)
+        
 
 #%% Debug/Visualization function
 
