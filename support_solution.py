@@ -90,10 +90,11 @@ def clean_compilation_tree(compilation_tree):
     
 def choose_file_by_compilation_time(file_list, files_info):
     """
-    Given a list of file return the one with the lowest compilation time and remove it from the list
+    Given a list of file return the one with the lowest compilation time and REMOVE it from the list
     """
     
     c_min = 1e9
+    c_min_idx = 0
     
     for i in range(len(file_list)):
         file = file_list[i]
@@ -101,7 +102,7 @@ def choose_file_by_compilation_time(file_list, files_info):
             c_min = files_info[file]['c']
             c_min_idx = i
     
-    c_min_file = file_list.pop(i)
+    c_min_file = file_list.pop(c_min_idx)
             
     return c_min_file
 
