@@ -126,8 +126,8 @@ while(True):
     time_for_current_elaboration -= 1
     
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # REPLICATION process
     
-    # Replication process
     idx_to_remove = []
     for j in range(len(files_to_replicate_list)):
         file = files_to_replicate_list[j]
@@ -157,11 +157,12 @@ while(True):
     
     
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # COMPILATION process
     
     # Check if any file has finish to compile
     if(np.any(time_for_current_elaboration <= 0)):
         # Find the file(s) that has finished
-        idx_server_to_do = np.where(time_for_current_elaboration == 1)[0]
+        idx_server_to_do = np.where(time_for_current_elaboration <= 0)[0]
         
         for i in range(len(idx_server_to_do)):
             idx_server = idx_server_to_do[i]
@@ -175,36 +176,42 @@ while(True):
             if(files_info[finish_file]['replicated'] == False and finish_file not in files_to_replicate_list):
                 files_to_replicate_list.append(finish_file)
             
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # SELECTION new file 
+    # TODO 
+    
+    for i in range(len(idx_server_to_do)):
+        idx_server = idx_server_to_do[i]
+    
+        # Choose the last layer, Select the file with the minor compilation time, Assign the file to the server
+        while(True):
+            tmp_layer = tmp_compilation_tree_list[idx_server][-1]
+            tmp_file = choose_file_by_compilation_time(tmp_layer, files_info)
             
-            # Choose the last layer, Select the file with the minor compilation time, Assign the file to the server
-            while(True):
-                tmp_layer = tmp_compilation_tree_list[idx_server][-1]
-                tmp_file = choose_file_by_compilation_time(tmp_layer, files_info)
+            # Check if the file is not replicated
+            if(files_info[tmp_file]['replicated'] == False): 
+                file_is_good = False
                 
-                # Check if the file is not replicated
-                if(files_info[tmp_file]['replicated'] == False): 
-                    file_is_good = False
+                # Check if the file is currently replicating
+                if(file in files_to_replicate_list):
+                    # Select the files only if the remaining replication time is higher than the current compilation time 
+                    if(files_info[tmp_file]['r'] > files_info[tmp_file]['c']): file_is_good = True
                     
-                    # Check if the file is currently replicating
-                    if(file in files_to_replicate_list):
-                        # Select the files only if the remaining replication time is higher than the current compilation time 
-                        if(files_info[tmp_file]['r'] > files_info[tmp_file]['c']): file_is_good = True
+                    # Check dependencies of the file
+                    if(len(files_info[tmp_file]['dependencies_list']) == 0): # IF it has no dependencies it is ok
+                        file_is_good = True
+                    else: # If it has dependencies check if they are compiled in the server 
+                        for dependency_file in files_info[tmp_file]['dependencies_list']: # Iterate through files
+                            if(dependency_file not in files_compiled_per_server[idx_server]): # PROBLEM. The file needed is not in the compiled files
+                                file_is_good = False
+                                
+                    # If the checks are passed select the file for the compilation
+                    if(file_is_good): break
                         
-                        # Check dependencies of the file
-                        if(len(files_info[tmp_file]['dependencies_list']) == 0): # IF it has no dependencies it is ok
-                            file_is_good = True
-                        else: # If it has dependencies check if they are compiled in the server 
-                            for dependency_file in files_info[tmp_file]['dependencies_list']: # Iterate through files
-                                if(dependency_file not in files_compiled_per_server[idx_server]): # PROBLEM. The file needed is not in the compiled files
-                                    file_is_good = False
-                                    
-                        # If the checks are passed select the file for the compilation
-                        if(file_is_good): break
-                            
-                    
-                else: # If it is replicated pass to another file
-                    # Check if files remaining in th ecurrent layer. If not remove it
-                    if(len(tmp_layer) <= 0): clean_compilation_tree(tmp_compilation_tree_list[idx_server])
+                
+            else: # If it is replicated pass to another file
+                # Check if files remaining in th ecurrent layer. If not remove it
+                if(len(tmp_layer) <= 0): clean_compilation_tree(tmp_compilation_tree_list[idx_server])
                         
             
             
