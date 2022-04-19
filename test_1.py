@@ -38,7 +38,7 @@ solution_string = ""
 t = 0
 
 #
-files_compiled_per_server = []
+files_compiled_per_server = [[] for _ in range(S)]
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # Find the first files to compile
@@ -90,7 +90,7 @@ idx_server_to_do = np.where(server_to_do == 1)[0]
 for i in range(len(idx_server_to_do)):
     # Select the server to do
     idx_server = idx_server_to_do[i]
-    print(idx_server)
+    # print(idx_server)
     
     # Choose the last layer for the compilation tree assigned to that server
     tmp_layer = tmp_compilation_tree_list[idx_server][-1]
@@ -109,8 +109,12 @@ for i in range(len(idx_server_to_do)):
     if(idx_server >= len(tmp_compilation_tree_list)): break
 
 
+for compilation_tree in tmp_compilation_tree_list: clean_compilation_tree(compilation_tree)
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# List that contain all the files to replicate
+files_to_replicate_list = []
 
 while(True):
     # Increase time
@@ -119,6 +123,60 @@ while(True):
     # Reduce current elaboration time by 1
     time_for_current_elaboration -= 1
     
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     
-    if(t > 100): break
+    # Replication process
+    idx_to_remove = []
+    for j in range(len(files_to_replicate_list)):
+        file = files_to_replicate_list[j]
+        
+        # Decrease time needed
+        files_info[file]['r'] -= 1
+        
+        # If I finisg a replication 
+        if(files_info[file]['r'] <= 0): 
+            # Set the replicated flag to True
+            files_info[file]['replicated'] = True
+            
+            # Add the file to the list of compiled flag for the server
+            for files_compiled in files_compiled_per_server: 
+                if file not in files_compiled: files_compiled.append(file)
+            
+            # N.b. the two operation are redundant in some way. TODO improve mantaining only 1
+            
+            idx_to_remove.append(j)
+    
+    # Remove the element from the replication list
+    idx_to_remove.reverse()
+    for idx in idx_to_remove: files_to_replicate_list.pop(idx)
+    
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+    # Check if any file has finish to compile
+    if(np.any(time_for_current_elaboration <= 0)):
+        # Find the file(s) that has finished
+        idx_server_to_do = np.where(time_for_current_elaboration == 1)[0]
+        
+        for i in range(len(idx_server_to_do)):
+            idx_server = idx_server_to_do[i]
+            finish_file = current_elaboration[idx_server]
+            
+            # Add the files to the current files compiled in that server
+            files_compiled_per_server[idx_server].append(current_elaboration[finish_file])
+            
+            # Check if I am already replicating the file. If not add to the replication files list
+            if(files_info[finish_file]['replicated'] == False and finish_file not in files_to_replicate_list):
+                files_to_replicate_list.append(files_to_replicate_list)
+            
+            
+            # Choose the last layer, Select the file with the minor compilation time, Assign the file to the server
+            tmp_layer = tmp_compilation_tree_list[idx_server][-1]
+            tmp_file = choose_file_by_compilation_time(tmp_layer, files_info)
+            current_elaboration[idx_server] = tmp_file
+            time_for_current_elaboration[i] = files_info[tmp_file]['c']
+            solution_string += "{} {}\n".format(tmp_file, i)
+            
+        
+    if(t > 20): break
     

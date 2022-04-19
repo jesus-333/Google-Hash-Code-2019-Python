@@ -50,6 +50,7 @@ def extract_info(file):
         tmp_file_info['r'] = replication_time
         tmp_file_info['n_dependencies'] = n_dependencies
         tmp_file_info['dependencies_list'] = dependencies_list
+        tmp_file_info['replicated'] = False
         
         file_info_dict[file_name] = tmp_file_info
     

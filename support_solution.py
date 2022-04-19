@@ -83,8 +83,10 @@ def clean_compilation_tree(compilation_tree):
     for i in range(len(compilation_tree)):
         if(len(compilation_tree[i]) == 0): idx_to_remove.append(i)
     
-    idx_to_remove.append(i)
+    # Start from the greats index
+    idx_to_remove.reverse()
     
+    # Remove compilation tree
     for idx in idx_to_remove: del compilation_tree[i]
     
     
