@@ -122,6 +122,17 @@ def remove_file_from_dependecies_list(file_to_remove, files_info):
     for file in files_info:
         if(file_to_remove in files_info[file]['dependencies_list']): 
             files_info[file]['dependencies_list'].remove(file_to_remove)
+            
+
+def check_compilation_trees(compilation_tree_list):
+    """
+    Function that return True only if all the compilation tree are empty
+    """
+    
+    for compilation_tree in compilation_tree_list:
+        if(len(compilation_tree) > 0): return False
+    
+    return True
         
 
 #%% Debug/Visualization function

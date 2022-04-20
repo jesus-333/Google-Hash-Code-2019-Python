@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from collections import deque
+import sys
 
 
 class CompiledFile(object):
@@ -113,12 +114,17 @@ def evalCheck(instance, solution):
 				queues[s].popleft()
 				# we can execute f on s
 				nDone += 1
-				# mark f available (either compilation or replication)
+				# mark f available (either by compilation or replication)
+				# NOTE: the same file might be compiled multiple times, either on the same server or on multiple servers.
+				#       Thus, we must be careful of not overwriting the time a file is available with a higher value.
 				for otherS in range(instance.nservers):
-					if otherS != s:
-						files[otherS][cf.name] = startTime + cf.ctime + cf.rtime
+					afterCompilation = startTime + cf.ctime
+					afterReplication = afterCompilation + cf.rtime
+					afterTime = afterReplication if otherS != s else afterCompilation
+					if cf.name in files[otherS]:
+						files[otherS][cf.name] = min(files[otherS][cf.name], afterTime)
 					else:
-						files[otherS][cf.name] = startTime + cf.ctime
+						files[otherS][cf.name] = afterTime
 				time[s] = startTime + cf.ctime
 		if not nDone:
 			break
@@ -143,9 +149,9 @@ def evalCheck(instance, solution):
 
 
 if __name__ == '__main__':
-	import sys
-	instance = loadInstance(sys.argv[1])
-	#instance.log()
-	solution = loadSolution(sys.argv[2], instance)
-	#solution.log()
-	print("Score =", evalCheck(instance, solution))
+    # instance = loadInstance(sys.argv[1])
+    instance = loadInstance("final_round_2019/a_example.in")
+    # instance.log()
+    solution = loadSolution(sys.argv[2], instance)
+    # solution.log()
+    print("Score =", evalCheck(instance, solution))
