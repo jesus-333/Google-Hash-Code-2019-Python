@@ -152,7 +152,7 @@ while(True):
             idx_to_remove.append(j)
     
     # Remove the element from the replication list
-    idx_to_remove.reverse()
+    idx_to_remove.reverse() # Reverse the list to avoid problem with indices
     for idx in idx_to_remove: files_to_replicate_list.pop(idx)
     
     
@@ -182,9 +182,10 @@ while(True):
     
     for i in range(len(idx_server_to_do)):
         idx_server = idx_server_to_do[i]
-    
-        # Choose the last layer, Select the file with the minor compilation time, Assign the file to the server
+        
+        tmp_layer_backup = []
         while(True):
+            # Choose the last layer, Select the file with the minor compilation time
             tmp_layer = tmp_compilation_tree_list[idx_server][-1]
             tmp_file = choose_file_by_compilation_time(tmp_layer, files_info)
             
@@ -193,7 +194,7 @@ while(True):
                 file_is_good = False
                 
                 # Check if the file is currently replicating
-                if(file in files_to_replicate_list):
+                if(tmp_file in files_to_replicate_list):
                     # Select the files only if the remaining replication time is higher than the current compilation time 
                     if(files_info[tmp_file]['r'] > files_info[tmp_file]['c']): file_is_good = True
                     
@@ -205,19 +206,38 @@ while(True):
                             if(dependency_file not in files_compiled_per_server[idx_server]): # PROBLEM. The file needed is not in the compiled files
                                 file_is_good = False
                                 
-                    # If the checks are passed select the file for the compilation
-                    if(file_is_good): break
-                        
+                                # Save the current file since it cannot be compiled
+                                tmp_layer_backup.append(tmp_file)
+                                
+                    # If the checks are passed select the file for the compilation and pass to the next server
+                    if(file_is_good): 
+                        current_elaboration[idx_server] = tmp_file
+                        time_for_current_elaboration[i] = files_info[tmp_file]['c']
+                        solution_string += "{} {}\n".format(tmp_file, i)
+                        break
+            
                 
-            else: # If it is replicated pass to another file
-                # Check if files remaining in th ecurrent layer. If not remove it
-                if(len(tmp_layer) <= 0): clean_compilation_tree(tmp_compilation_tree_list[idx_server])
-                        
+            # Check if files remaining in th current layer. 
+            if(len(tmp_layer) <= 0): 
+                if(len(tmp_layer_backup) == 0): 
+                    # If the backup layer is empty it means that there were no problem with dependencies
+                    # So I can clean the layer since all the files are correctly compiled and proced with other layers
+                    clean_compilation_tree(tmp_compilation_tree_list[idx_server])
+                else:
+                    # If the backup layer is NOT empty this means that some files were discarded because of some dependecies problem.
+                    # This means that the files were not compiled. So for this iteration I not assign any file to the server
+                    break
             
             
-            current_elaboration[idx_server] = tmp_file
-            time_for_current_elaboration[i] = files_info[tmp_file]['c']
-            solution_string += "{} {}\n".format(tmp_file, i)
+            # Check if layer remain for the current compilation tree. If not assign a new compilation tree
+            if(len(tmp_compilation_tree_list[idx_server]) == 0):
+                if(len(targets) > 0): # Check if there are new targets
+                    # Take the first element in the target dictionary 
+                    new_target = list(targets.items())[0][0]
+                    
+                    # Assign the new compilation tree to the current server
+                    tmp_compilation_tree_list[idx_server] = compilation_tree_per_target[new_target] + []
+        
             
         
     if(t >= 20): break
