@@ -82,13 +82,36 @@ class compilationTree():
         
     def __get_leaf(self, leaf_list, node):
         if(len(node.leaf) == 0): 
-            return leaf_list + [node]
+            tmp_list = leaf_list + [node]
+            # print(node.name)
+            # print(tmp_list)
+            return tmp_list
         else:
             for child_node in node.leaf: leaf_list += self.__get_leaf(leaf_list, child_node)
             
             return leaf_list      
         
     def update_leaf(self): self.tree_leafs = list(set(self.__get_leaf([], self.root)))
+    
+    
+    def remove_leaf(self, leaf_name):
+        return self.__remove_leaf(leaf_name, self.root)
+            
+    def __remove_leaf(self, name, node):
+        idx_to_remove = -1
+        for i in range(len(node.leaf)):
+            leaf = node.leaf[i]
+            if(leaf.name == name): 
+                idx_to_remove = i
+                
+            else: self.__remove_leaf(name, leaf)
+        
+        if(idx_to_remove == -1): 
+            return 0
+        else:
+            del node.leaf[idx_to_remove]
+            self.update_leaf()
+            return 1
         
     
 class fileNode():

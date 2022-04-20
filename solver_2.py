@@ -34,14 +34,12 @@ compilation_tree_per_target = create_compilation_tree_per_targets(files_info, ta
 
 #%%
 
-tmp_target = targets_keys[0]
+tmp_target = targets_keys[1]
 tmp_tree = compilationTree(tmp_target, files_info)
 
-leaf_list = tmp_tree.get_leaf()
 
-print("Deleted leaf:\n",leaf_list[0], "\n\n")
-del leaf_list[0]
-
-leaf_list = tmp_tree.get_leaf(update = True)
-for leaf in leaf_list: print(leaf)
+print("Leaf list BEFORE:\n", tmp_tree.get_leaf(update = True))
+print("\nDeleted leaf c1")
+print(tmp_tree.remove_leaf('c1'))
+print("Leaf list AFTER\n", tmp_tree.get_leaf(update = True))
 
