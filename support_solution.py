@@ -1,6 +1,6 @@
 import numpy as np
 
-#%% Function related to data rearrangement 
+#%% Function related to data rearrangement (SOLUTION 1)
 
 def create_compilation_tree(files_info, file_target):
     """
@@ -63,6 +63,60 @@ def create_compilation_tree_per_targets(files_info, targets):
         
     return compilation_tree_per_target
 
+#%% Function related to data rearrangement (SOLUTION 1)
+
+class compilationTree():
+    
+    def __init__(self, target, files_info):
+        """
+        Class that create REAL compilation tree for each file. 
+        It need the name of the target and the dictionary with all the files info
+        """
+        self.root = fileNode(target, files_info)
+        
+        self.tree_leafs = list(set(self.__get_leaf([], self.root)))
+        
+    def get_leaf(self, update = False):
+        if(update): self.update_leaf()
+        return self.tree_leafs
+        
+    def __get_leaf(self, leaf_list, node):
+        if(len(node.leaf) == 0): 
+            return leaf_list + [node]
+        else:
+            for child_node in node.leaf: leaf_list += self.__get_leaf(leaf_list, child_node)
+            
+            return leaf_list      
+        
+    def update_leaf(self): self.tree_leafs = list(set(self.__get_leaf([], self.root)))
+        
+    
+class fileNode():
+    def __init__(self, file_name, files_info):
+        self.name = file_name
+        self.c = files_info[file_name]['c']
+        self.r = files_info[file_name]['r']
+        
+        self.replicated = False
+        
+        self.leaf = []
+        for dependency in files_info[file_name]['dependencies_list']: self.leaf.append(fileNode(dependency, files_info))
+        
+        self.leaf_dict = {}
+        for dependency in files_info[file_name]['dependencies_list']: self.leaf_dict[dependency] = fileNode(dependency, files_info)
+        
+        self.leaf_name = files_info[file_name]['dependencies_list']
+        
+    def __getitem__(self, idx):
+        return self.leaf[idx], self.leaf_name[idx]
+    
+    def __repr__(self):
+        tmp_string = ""
+        tmp_string += "Leaf name: {}\n".format(self.name)
+        tmp_string += "\tc = {}\tr = {}".format(self.c, self.r)
+        
+        return tmp_string
+    
 #%% 
 
 def compute_solution(C, files_info, targets, compilation_tree_per_target):
