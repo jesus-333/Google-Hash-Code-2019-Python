@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 debug_var = True
 
-idx_file = 0
+idx_file = 2
 
 # Load the data
 data = get_file()
@@ -52,6 +52,9 @@ for idx_server in range(S):
     del compilation_tree_dict[target_file]
     
     if(debug_var): print(0, "\tServer: {} - NEW Target assign: {}".format(idx_server, target_file))
+    
+    # Stop if I have more server than target
+    if(idx_server >= len(targets) - 1): break
 
 # Used for debug
 tmp_tree = compilation_tree_list[0]
@@ -83,7 +86,7 @@ server_to_do = np.ones(S)
 # This variable is used to track the free server in this situations
 # 1 = free server, 0 = server assign to a target
 free_server = np.ones(S)
-free_server[0:len(target)] = 0
+free_server[0:len(targets)] = 0
 
 # Replication list
 replication_list = []
@@ -156,7 +159,7 @@ while(True):
         # If all the leaf (file) are currently compiling/replicating choose the one with the lowest compilation time
         # In this case there cannot be dependency problem because each server is paired with a specific compilation tree
         if(server_to_do[idx_server] == 1 and free_server[idx_server] == 0):
-            if(debug_var): print(t, "\tServer: {} - File END: {}".format(idx_server, current_elaboration[idx_server]))
+            if(debug_var and current_elaboration[idx_server] != ''): print(t, "\tServer: {} - File END: {}".format(idx_server, current_elaboration[idx_server]))
             
             if(t != 0): 
                 # N.B. Due to the replication process some file can be removed early from the compilation tree while they are compiling.
@@ -236,7 +239,7 @@ while(True):
         # If the server has finish the compilation of the current file and it IS free
         # Choose the leaf (file) with the highest compilation time between all the files available and all the dependencies ok
         if(server_to_do[idx_server] == 1 and free_server[idx_server] == 1):
-            if(debug_var): print(t, "\tServer: {} - File END: {}".format(idx_server, current_elaboration[idx_server]))
+            if(debug_var and current_elaboration[idx_server] != ''): print(t, "\tServer: {} - File END: {}".format(idx_server, current_elaboration[idx_server]))
             
             # Add the files to the compiled file in the server
             files_compiled_per_server[idx_server].append(current_elaboration[idx_server])
