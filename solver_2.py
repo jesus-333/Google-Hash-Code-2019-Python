@@ -106,7 +106,6 @@ while(True):
             # Check if the file is currently compiling and eventually remove it
             for idx_server in range(S):
                 # If the file is currently compiling then stop the compilation
-                print("\t\t", idx_server, current_elaboration[idx_server], replicating_file)
                 if(current_elaboration[idx_server] == replicating_file):
                     # Remove the selection/compilation of the file from the solution
                     # Since it is replicated it is available for all the server
@@ -116,7 +115,7 @@ while(True):
                     server_to_do[idx_server] = 1
                     
                     # Set the variable to nonsensical value (for safety) 
-                    current_elaboration[idx_server] = ""
+                    current_elaboration[idx_server] = ''
                     time_for_current_elaboration[idx_server] = -1
                     
             # Remove the file from all the compilation tree (if it exist in the compilation tree) currently in the server
@@ -143,6 +142,7 @@ while(True):
             
     # Remove the file that has finish replication
     for file in file_to_remove: replication_list.remove(file)
+
                 
     
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -159,14 +159,18 @@ while(True):
             if(debug_var): print(t, "\tServer: {} - File END: {}".format(idx_server, current_elaboration[idx_server]))
             
             if(t != 0): 
-                # Add the file to the replication list
-                if current_elaboration[idx_server] not in replication_list: replication_list.append(current_elaboration[idx_server])
-                
-                # Add the files to the compiled file in the server
-                files_compiled_per_server[idx_server].append(current_elaboration[idx_server])
-                
-                # Remove the file from the current compilation tree
-                compilation_tree_list[idx_server].remove_file(current_elaboration[idx_server])
+                # N.B. Due to the replication process some file can be removed early from the compilation tree while they are compiling.
+                # When this happen the server is set as free for new file to compile so it return in this section of the code
+                # So the check avoid to remove node (files) that are alredy been removed by the replication process
+                if(current_elaboration[idx_server] != ''):
+                    # Add the file to the replication list
+                    if current_elaboration[idx_server] not in replication_list: replication_list.append(current_elaboration[idx_server])
+                    
+                    # Add the files to the compiled file in the server
+                    files_compiled_per_server[idx_server].append(current_elaboration[idx_server])
+                    
+                    # Remove the file from the current compilation tree
+                    compilation_tree_list[idx_server].remove_file(current_elaboration[idx_server])
             
             # Extract leaf (files with no dependecies) from the tree
             possible_files = compilation_tree_list[idx_server].leaf_list
@@ -180,6 +184,10 @@ while(True):
                     compilation_tree_list[idx_server] = compilation_tree_dict[target_file] 
                     if(debug_var): print(t, "\tServer: {} - NEW Target assign: {}".format(idx_server, target_file))
                     
+                    # Clean the new compilation tree of the file already compiled in the server
+                    for compiled_file in files_compiled_per_server[idx_server]:
+                        if(compiled_file in compilation_tree_list[idx_server].G.nodes()): compilation_tree_list[idx_server].remove_file(compiled_file)
+                    
                     # Same step done below for the case with multiple leaf. Read the comment in that section
                     possible_files = compilation_tree_list[idx_server].leaf_list
                     possible_files_sorted = sorted(possible_files, key=lambda x: files_info[x]['c'], reverse = False)
@@ -189,7 +197,8 @@ while(True):
                         elif file in replication_list: pass
                         else: idx_choosen_file = j
                     if(idx_choosen_file == -1): idx_choosen_file = 0
-                    idx_choosen_file = possible_files.index(possible_files[idx_choosen_file])
+                    idx_choosen_file = possible_files.index(possible_files_sorted[idx_choosen_file])
+
                     
                     server_to_do[idx_server] = 0
                     
@@ -218,7 +227,7 @@ while(True):
                 if(idx_choosen_file == -1): idx_choosen_file = 0
                 
                 # Find the index of the file in non sorted list
-                idx_choosen_file = possible_files.index(possible_files[idx_choosen_file])
+                idx_choosen_file = possible_files.index(possible_files_sorted[idx_choosen_file])
             
             # Start compiling the selected file
             if(idx_choosen_file != -1): selected_file = possible_files[idx_choosen_file]
@@ -293,4 +302,12 @@ text_file.close()
 
 print("\n\n")
 print(solution_string)
+
+from solchecker import loadInstance, loadSolution, evalCheck
+
+file_list = ['a_example.in', 'b_narrow.in', 'c_urgent.in', 'd_typical.in', 'e_intriguing.in', 'f_big.in']
+
+instance = loadInstance("final_round_2019/{}".format(file_list[idx_file]))
+solution = loadSolution("solution.txt", instance)
+print("Score =", evalCheck(instance, solution))
 
