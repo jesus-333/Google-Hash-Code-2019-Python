@@ -70,3 +70,21 @@ class compilationTreeNX():
         nx.draw(self.G, with_labels = True, node_color = color_map)
         
 #%%
+
+def clean_solution(solution_string, file_name, idx_server):
+    """
+    Remove the line containing the specific file name and idx_server from the solution
+    """
+    
+    new_solution_string = ""
+    
+    for line in solution_string.split("\n"):
+        if(len(line) > 0):
+            line_file = line.split(" ")[0]
+            line_server = int(line.split(" ")[1])
+            
+            # print(line_file, file_name, line_file != file_name)
+            # print(line_server, idx_server, line_server != idx_server)
+            if(line_file != file_name or line_server != idx_server): new_solution_string += line + "\n"
+        
+    return new_solution_string
