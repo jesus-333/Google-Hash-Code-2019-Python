@@ -44,7 +44,10 @@ class compilationTreeNX():
     
     def update_leaf(self):
         tmp_node_list = list(self.G.nodes())
-        n_dependencies_per_node = np.squeeze(np.asarray(np.sum(self.adj_mat, 0)))
+        
+        # TODO check if syntax is correct
+        # n_dependencies_per_node = np.squeeze(np.asarray(np.sum(self.adj_mat, 0)))
+        n_dependencies_per_node = np.asarray(np.sum(self.adj_mat, 0))[0]
         
         self.leaf_list = []
         for i in range(len(n_dependencies_per_node)):
@@ -55,9 +58,13 @@ class compilationTreeNX():
         # Remove the node
         self.G.remove_node(file)
         
-        # Update adjancey matrix and leaf list
-        self.update_adjacency_matrix()
-        self.update_leaf()
+        # Update adjancey matrix and leafs list
+        if(len(self.G.nodes()) > 0):
+            self.update_adjacency_matrix()
+            self.update_leaf()
+        else:
+            self.leaf_list = []
+            self.adj_mat = None
         
                 
     def draw(self, figsize = (20, 10)):

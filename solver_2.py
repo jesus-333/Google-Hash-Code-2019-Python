@@ -28,7 +28,7 @@ print("Achievable targets: ", len(targets))
 # Sort targets by attribute. Targets is intended as the target file to compile
 # attribute = 'points' 
 attribute = 'deadline'
-targets = sort_target_by_attribute(targets, attribute) 
+targets = sort_target_by_attribute(targets, attribute, reverse = False) 
 targets_keys = list(targets.keys()) 
 
 #%%
@@ -140,15 +140,22 @@ while(True):
             if(debug_var): print(t, "\tServer: {} - File END: {}".format(idx_server, current_elaboration[idx_server]))
             
             # Add the files to the compiled file in the server
-            files_compiled_per_server[idx_server].append(current_elaboration[idx_server])
+            if(t != 0): files_compiled_per_server[idx_server].append(current_elaboration[idx_server])
+            
+            # Remove the file from the current compilation tree
+            if(t != 0): compilation_tree_list[idx_server].remove_file(current_elaboration[idx_server])
             
             # Extract leaf (files with no dependecies) from the tree
             possible_files = compilation_tree_list[idx_server].leaf_list
             
             if(len(possible_files) == 0): # If I have only a 0 leaf this mean that I have finish the compilation of the target and server is free for new target or support work
-                if(len(targets_keys) > 0): # If there are more target assign the new target to the server
+                del targets[current_elaboration[idx_server]]    
+                if(debug_var): print(t, "\t\tTarget complete")
+            
+                if(len(targets_keys) > 0): # If there are more targets available assign the new target to the server
                     target_file = targets_keys.pop(0)
-                    compilation_tree_list.append(compilationTreeNX(target_file, compilation_file_list_per_target[target_file], files_info))
+                    compilation_tree_list[idx_server] = compilation_tree_dict[target_file] 
+                    if(debug_var): print(t, "\tServer: {} - NEW Target assign: {}".format(idx_server, target_file))
                     
                     # Same step done below for the case with multiple leaf. Read the comment in that section
                     possible_files_sorted = sorted(compilation_tree_list[idx_server].leaf_list, key=lambda x: files_info[x]['c'], reverse = False)
@@ -232,7 +239,7 @@ while(True):
             # Update solution string
             solution_string += "{} {}\n".format(current_elaboration[idx_server], idx_server) # Update solution string
             
-            if(debug_var): print(t, "\tServer: {} - File CHOOSEN: {}".format(idx_server, selected_file))
+            if(debug_var): print(t, "\tServer: {} - File CHOOSEN: {}\n".format(idx_server, selected_file))
             
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     
@@ -242,5 +249,19 @@ while(True):
     # Check the server that has finish the compilation of the current file and set their flag to 1
     server_to_do[np.where(time_for_current_elaboration <= 0)[0]] = 1
     
-    if(t > 10): break
+    # Condition to finish the cycle
+    # A target is removed from the list only when it is compiled. So the cycle finish only when all the target are compiled
+    if(len(targets) == 0): break
+
+    # if(t > 30): break
+
+solution_string = str(len(solution_string.strip().split("\n"))) + "\n" + solution_string
+text_file = open("solution.txt", "w")
+n = text_file.write(solution_string)
+text_file.close()
+
+#%%
+
+print("\n\n")
+print(solution_string)
 
