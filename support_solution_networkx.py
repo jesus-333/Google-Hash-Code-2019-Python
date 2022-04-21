@@ -31,16 +31,34 @@ class compilationTreeNX():
                 for dependency in files_info[file]['dependencies_list']:
                     self.G.add_edge(dependency, file)
     
+        # Create adjancey matrix and leaf list
         self.update_adjacency_matrix()
+        self.update_leaf()
+    
     
     def update_adjacency_matrix(self, use_dense_matrix = False):
         self.adj_mat = nx.adjacency_matrix(self.G)
         if(use_dense_matrix): self.adj_mat = self.adj_mat.todense()
+                
+    
+    def update_leaf(self):
+        tmp_node_list = list(self.G.nodes())
+        n_dependencies_per_node = np.squeeze(np.asarray(np.sum(self.adj_mat, 0)))
         
+        self.leaf_list = []
+        for i in range(len(n_dependencies_per_node)):
+            if(n_dependencies_per_node[i] == 0): self.leaf_list.append(tmp_node_list[i])
+    
     
     def remove_file(self, file):
+        # Remove the node
         self.G.remove_node(file)
         
+        # Update adjancey matrix and leaf list
+        self.update_adjacency_matrix()
+        self.update_leaf()
+        
+                
     def draw(self, figsize = (20, 10)):
         color_map = []
         for node in self.G: 
@@ -51,4 +69,4 @@ class compilationTreeNX():
         plt.figure(figsize = figsize)
         nx.draw(self.G, with_labels = True, node_color = color_map)
         
-        
+#%%

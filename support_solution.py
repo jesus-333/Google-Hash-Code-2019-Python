@@ -163,19 +163,7 @@ class shallowNode():
     
 #%% 
 
-def compute_solution(C, files_info, targets, compilation_tree_per_target):
-    t = 0
-    
-    current_elaboration = []
-    tmp_compilation_trees = []
-    i = 0
-    for target in targets:
-        tmp_compilation_trees.append(compilation_tree_per_target[target])
-    
-    while(True):
-        t += 1
-        
-        
+
 def clean_compilation_tree(compilation_tree):
     idx_to_remove = []
     for i in range(len(compilation_tree)):

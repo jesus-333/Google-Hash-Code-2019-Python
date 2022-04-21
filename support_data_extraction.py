@@ -69,10 +69,10 @@ def extract_info(file):
     return C, T, S, file_info_dict, file_target_dict
 
 
-def clean_target(targets, file_info):
+def clean_target(targets, files_info):
     new_targets = {}
     for file in targets:
-        if(targets[file]['deadline'] < file_info[file]['c']): new_targets[file] = targets[file]
-        
+        if(targets[file]['deadline'] > files_info[file]['c']): new_targets[file] = targets[file]
+       
     return new_targets
         
