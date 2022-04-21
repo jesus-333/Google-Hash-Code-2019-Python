@@ -67,3 +67,12 @@ def extract_info(file):
         file_target_dict[target_name] = tmp_target_info
         
     return C, T, S, file_info_dict, file_target_dict
+
+
+def clean_target(targets, file_info):
+    new_targets = {}
+    for file in targets:
+        if(targets[file]['deadline'] < file_info[file]['c']): new_targets[file] = targets[file]
+        
+    return new_targets
+        

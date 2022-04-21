@@ -123,7 +123,9 @@ class fileNode():
         self.replicated = False
         
         self.leaf = []
-        for dependency in files_info[file_name]['dependencies_list']: self.leaf.append(fileNode(dependency, files_info))
+        for dependency in files_info[file_name]['dependencies_list']: 
+            if(dependency == self.name): raise Exception("LOOP")
+            self.leaf.append(fileNode(dependency, files_info))
         
         self.leaf_dict = {}
         for dependency in files_info[file_name]['dependencies_list']: self.leaf_dict[dependency] = fileNode(dependency, files_info)
@@ -137,6 +139,25 @@ class fileNode():
         tmp_string = ""
         tmp_string += "Leaf name: {}\n".format(self.name)
         tmp_string += "\tc = {}\tr = {}".format(self.c, self.r)
+        
+        return tmp_string
+    
+    
+class shallowNode():
+    def __init__(self, file_name, files_info):
+        self.name = file_name
+        
+        self.leaf = []
+        for dependency in files_info[file_name]['dependencies_list']: self.leaf.append(shallowNode(dependency, files_info))
+        
+        self.leaf_name = files_info[file_name]['dependencies_list']
+        
+    def __getitem__(self, idx):
+        return self.leaf[idx], self.leaf_name[idx]
+    
+    def __repr__(self):
+        tmp_string = ""
+        tmp_string += "Leaf name: {}\n".format(self.name)
         
         return tmp_string
     
