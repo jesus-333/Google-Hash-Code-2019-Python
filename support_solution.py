@@ -48,7 +48,8 @@ def create_compilation_tree(files_info, file_target):
     
 def sort_target_by_attribute(target_list, attribute = 'poinst', reverse = True):
     """
-    "Sort" the key of dictionary so that when they are cycled the first one is the one with the hight attribute etc
+    "Sort" the key of dictionary so that when they are cycled the first one is the one with the highest attribute etc
+    If reverse is set to False the order will be flipped i.e. the first element will have the lowest attribute
     """
     
     return {k: v for k, v in sorted(target_list.items(), key=lambda item: item[1][attribute], reverse = reverse)}

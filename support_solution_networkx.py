@@ -16,6 +16,7 @@ class compilationTreeNX():
         
         # Create directed graph
         self.G = nx.DiGraph()
+        
         self.files_info = files_info
         
         # Insert node (file) in the graph
@@ -88,3 +89,14 @@ def clean_solution(solution_string, file_name, idx_server):
             if(line_file != file_name or line_server != idx_server): new_solution_string += line + "\n"
         
     return new_solution_string
+
+
+def clean_dependency(dep_file, files_info):
+    """
+    Remove the dep_file from the depency of all the files inside the dictionary
+    """
+    
+    for file in files_info:
+        if dep_file in files_info[file]['dependencies_list']:
+            files_info[file]['dependencies_list'].remove(dep_file)
+            files_info[file]['n_dependencies'] -= 1
