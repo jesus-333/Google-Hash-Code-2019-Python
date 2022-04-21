@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 debug_var = True
 
-idx_file = 3
+idx_file = 5
 
 # Load the data
 data = get_file()
