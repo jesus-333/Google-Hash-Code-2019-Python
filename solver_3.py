@@ -8,12 +8,18 @@ from support_solution_networkx import compilationTreeNX, clean_solution, clean_d
 
 import matplotlib.pyplot as plt
 
+import random
+
 #%%
 
 debug_var = True
 
-idx_file = 4
-server_per_target = 1
+idx_file = 2
+server_per_target = -1
+random_selection_free_server = False
+# attribute = 'points' 
+attribute = 'deadline'
+reverse_order = True # IF true the target are sorted from the one with the highest attribute to the one with the lowest
 
 # Load the data
 data = get_file()
@@ -24,19 +30,30 @@ files_info_backup = extract_info(data[idx_file])[3]
 targets = clean_target(targets_raw, files_info)
 print("Total targets: ", len(targets_raw))
 print("Achievable targets: ", len(targets))
-
+if(server_per_target <= 0): server_per_target = S
 
 # Sort targets by attribute. Targets is intended as the target file to compile
-# attribute = 'points' 
-attribute = 'deadline'
-targets = sort_target_by_attribute(targets, attribute, reverse = True) 
-targets_keys = list(targets.keys()) 
-
-#%%
+targets = sort_target_by_attribute(targets, attribute, reverse = reverse_order) 
 
 # Variable to track the targets that are currenlty compiling
 targets_keys = list(targets.keys())
 current_target = []
+
+if(debug_var):
+    print("First target: {} - {}: {}".format(targets_keys[0], attribute, targets[targets_keys[0]][attribute]))
+    print("First target: {} - {}: {}".format(targets_keys[-1], attribute, targets[targets_keys[-1]][attribute]))
+
+# targets_keys = list(targets.keys()) 
+# idx_target = 2 
+# key_to_remove = []
+# for i in range(len(targets_keys)): 
+#     if(i != idx_target): key_to_remove.append(targets_keys[i])
+    
+# for key in key_to_remove: del targets[key]
+
+#%%
+
+
 
 # Create the compilation tree for each target file
 compilation_file_list_per_target = create_compilation_tree_per_targets(files_info, targets)
@@ -57,7 +74,9 @@ for idx_server in range(server_per_target):
     if(debug_var): print(0, "\tServer: {} - NEW Target assign: {}".format(idx_server, target_file))
     
     # Stop if I have more server than target
-    if(idx_server >= len(targets) - 1): break
+    if(idx_server >= len(targets) - 1): 
+        server_per_target = len(compilation_tree_list)
+        break
 
 # Used for debug
 tmp_tree = compilation_tree_list[0]
@@ -83,8 +102,8 @@ time_for_current_elaboration = np.zeros(S)
 
 # Vector that indicate wich file have finish the compilation of the current file. 
 # 0 = Currently compiling, 1 = Finish compile file, 2 = Finish early due to target removal
-server_to_do = np.zeros(S)
-server_to_do[0:server_per_target] = 1
+server_to_do = np.ones(S)
+# server_to_do[0:server_per_target] = 1
 
 # Variable that indicate if there are extra server. 
 # N.b. Each server is dedicated to a single target but there can been more server that target. 
@@ -114,7 +133,7 @@ while(True):
             # Check if the file is currently compiling and eventually remove it
             for idx_server in range(S):
                 # If the file is currently compiling then stop the compilation
-                if(current_elaboration[idx_server] == replicating_file):
+                if(current_elaboration[idx_server] == replicating_file and time_for_current_elaboration[idx_server] > 0):
                     # Remove the selection/compilation of the file from the solution
                     # Since it is replicated it is available for all the server
                     solution_string = clean_solution(solution_string, replicating_file, idx_server)
@@ -164,7 +183,7 @@ while(True):
         # If all the leaf (file) are currently compiling/replicating choose the one with the lowest compilation time
         # In this case there cannot be dependency problem because each server is paired with a specific compilation tree
         if(server_to_do[idx_server] >= 1 and free_server[idx_server] == 0):
-            if(debug_var and current_elaboration[idx_server] != ''): print(t, "\tServer: {} - File END: {}".format(idx_server, current_elaboration[idx_server]))
+            if(debug_var and current_elaboration[idx_server] != ''): print(t, "\tServer: {} - File END: {} (TARGET)".format(idx_server, current_elaboration[idx_server]))
             
             if(t != 0): 
                 # N.B. Due to the replication process some file can be removed early from the compilation tree while they are compiling.
@@ -207,8 +226,8 @@ while(True):
                     possible_files_sorted = sorted(possible_files, key=lambda x: files_info[x]['c'], reverse = False)
                     for j in range(len(possible_files_sorted)):
                         file = possible_files_sorted[j]
-                        if file in current_elaboration: pass
-                        elif file in replication_list: pass
+                        if file in current_elaboration: continue 
+                        elif file in replication_list: continue 
                         else: idx_choosen_file = j
                     if(idx_choosen_file == -1): idx_choosen_file = 0
                     idx_choosen_file = possible_files.index(possible_files_sorted[idx_choosen_file])
@@ -233,8 +252,8 @@ while(True):
                 # Select the file with the minor compilation time that is not replicating or compiling
                 for j in range(len(possible_files_sorted)):
                     file = possible_files_sorted[j]
-                    if file in current_elaboration: pass
-                    elif file in replication_list: pass
+                    if file in current_elaboration: continue 
+                    elif file in replication_list: continue 
                     else: idx_choosen_file = j
                         
                 
@@ -253,7 +272,11 @@ while(True):
         # If the server has finish the compilation of the current file and it IS free
         # Choose the leaf (file) with the highest compilation time between all the files available and all the dependencies ok
         if(server_to_do[idx_server] == 1 and free_server[idx_server] == 1):
-            if(debug_var and current_elaboration[idx_server] != ''): print(t, "\tServer: {} - File END: {}".format(idx_server, current_elaboration[idx_server]))
+            if(debug_var and current_elaboration[idx_server] != ''): print(t, "\tServer: {} - File END: {} (FREE SERVER)".format(idx_server, current_elaboration[idx_server]))
+            
+            if(current_elaboration[idx_server] != '' and current_elaboration[idx_server] != None):
+                # Add the file to the replication list
+                if current_elaboration[idx_server] not in replication_list: replication_list.append(current_elaboration[idx_server])
             
             # Add the files to the compiled file in the server
             files_compiled_per_server[idx_server].append(current_elaboration[idx_server])
@@ -262,12 +285,16 @@ while(True):
             possible_files = []
             for tmp_compilation_tree in compilation_tree_list: possible_files += tmp_compilation_tree.leaf_list
             
-            # Sort the list by compilation time (from higher to lower) and choose the first file
+            # Sort the list by compilation time (from higher to lower) and choose the one with the highest compilation time that is not currently compiling or replicating
             possible_files_sorted = sorted(possible_files, key=lambda x: files_info[x]['c'], reverse = True)
+            if(random_selection_free_server): random.shuffle(possible_files_sorted)
             
             for j in range(len(possible_files_sorted)):
                 # Currently analyzed file
                 tmp_file = possible_files_sorted[j]
+                
+                if tmp_file in current_elaboration: continue 
+                if tmp_file in replication_list: continue 
                 
                 # If file has no dependency there are no problem so the file is selected
                 if(len(files_info[tmp_file]['dependencies_list']) == 0):
@@ -280,9 +307,9 @@ while(True):
                         idx_choosen_file = j
                         break
                     else: # If not skip the server for the current iteration
-                        pass
-                
-            selected_file = possible_files_sorted[idx_choosen_file]
+                        continue 
+               
+            if(idx_choosen_file != -1): selected_file = possible_files_sorted[idx_choosen_file]
             
         
         if(idx_choosen_file != -1):
@@ -305,11 +332,11 @@ while(True):
     # Check the server that has finish the compilation of the current file and set their flag to 1
     server_to_do[np.where(time_for_current_elaboration <= 0)[0]] = 1
     
-    # Check if a target surpass the deadline and evenntuallt free the server
+    # Check if a target surcontinue  the deadline and evenntually free the server
     for idx_server in range(len(current_target)):
         target = current_target[idx_server]
         if(target in list(targets_raw.keys())): # Check if the target exist in the dictionary (To avoid error when a server is set free from target)
-            if(t > targets_raw[target]['deadline']): # Check if the time surpass the deadline
+            if(t > targets_raw[target]['deadline']): # Check if the time surcontinue  the deadline
                 if(debug_var): print(t, "\tServer {} - EARLY Remove target: {}".format(idx_server, target))    
             
                 # Remove all node from the compilation tree so the next iteration a new target/file will be assigned
@@ -324,7 +351,7 @@ while(True):
     # A target is removed from the list only when it is compiled. So the cycle finish only when all the target are compiled
     if(len(targets) == 0): break
 
-    # if(t > 30): break
+    # if(t > 33339): break
 
 solution_string = str(len(solution_string.strip().split("\n"))) + "\n" + solution_string
 text_file = open("solution.txt", "w")
