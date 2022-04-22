@@ -14,7 +14,7 @@ import random
 
 debug_var = True
 
-idx_file = 5
+idx_file = 0
 server_per_target = -1
 random_selection_free_server = True
 # attribute = 'points' 

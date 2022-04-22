@@ -58,4 +58,4 @@ solution_f_big:
 	reverse_order = False
 
 	Score = 840971
-	Time for computation ~20-30min
+	Time for computation ~20-30excemin
