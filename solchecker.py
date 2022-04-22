@@ -128,9 +128,11 @@ def evalCheck(instance, solution):
 				time[s] = startTime + cf.ctime
 		if not nDone:
 			break
+        
 	# if queues are not empty, then we have messed up with dependencies
-	for s in range(instance.nservers):
-		assert(not queues[s])
+	for s in range(instance.nservers): assert(not queues[s])    
+
+        
 	# merge files from all servers
 	targets = {}
 	for s in range(instance.nservers):

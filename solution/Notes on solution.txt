@@ -1,3 +1,14 @@
+solution_b_narrow_1:
+	Generated with solver 3
+	server_per_target = -1
+	random_selection_free_server = True
+	attribute = 'deadline'
+	reverse_order = True
+
+	Score = 1346790
+	Time for computation ~38min
+	
+
 solution_c_urgent_1:
 	Generated with solver 3
 	server_per_target = -1
@@ -6,7 +17,9 @@ solution_c_urgent_1:
 	reverse_order = True
 
 	Score = 1312825
+	Time for computation ~1h
 	
+
 solution_c_urgent_2:
 	Generated with solver 3
 	server_per_target = -1
@@ -15,3 +28,34 @@ solution_c_urgent_2:
 	reverse_order = True
 
 	Score = 1304683
+	Time for computation ~1h
+
+
+solution_d_typical_1:
+	Generated with solver 3
+	server_per_target = -1
+	random_selection_free_server = True
+	attribute = 'deadline'
+	reverse_order = False
+
+	Score = 69967
+	Time for computation ~5min
+
+
+solution_d_typical_2:
+	Generated with solver 3
+	server_per_target = -1
+	random_selection_free_server = True
+	attribute = 'deadline'
+	reverse_order = False
+
+
+solution_f_big:
+	Generated with solver 3
+	server_per_target = -1
+	random_selection_free_server = True
+	attribute = 'deadline'
+	reverse_order = False
+
+	Score = 840971
+	Time for computation ~20-30min

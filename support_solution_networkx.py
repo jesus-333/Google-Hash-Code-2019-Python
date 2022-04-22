@@ -106,3 +106,12 @@ def clean_dependency(dep_file, files_info):
         if dep_file in files_info[file]['dependencies_list']:
             files_info[file]['dependencies_list'].remove(dep_file)
             files_info[file]['n_dependencies'] -= 1
+            
+            
+def check_dependency(file, files_info, file_compiled_in_server):
+    if(files_info[file]['n_dependencies'] == 0): return True
+    else:
+        for dependency in files_info[file]['dependencies_list']:
+            if dependency not in file_compiled_in_server: return False
+        
+        return True

@@ -4,7 +4,7 @@ from support_data_extraction import get_file, extract_info, clean_target
 
 from support_solution import create_compilation_tree, sort_target_by_attribute, create_compilation_tree_per_targets
 from support_solution import compilationTree
-from support_solution_networkx import compilationTreeNX, clean_solution, clean_dependency
+from support_solution_networkx import compilationTreeNX, clean_solution, clean_dependency, check_dependency
 
 import matplotlib.pyplot as plt
 
@@ -14,12 +14,12 @@ import random
 
 debug_var = True
 
-idx_file = 2
+idx_file = 5
 server_per_target = -1
-random_selection_free_server = False
+random_selection_free_server = True
 # attribute = 'points' 
 attribute = 'deadline'
-reverse_order = True # IF true the target are sorted from the one with the highest attribute to the one with the lowest
+reverse_order = False # IF true the target are sorted from the one with the highest attribute to the one with the lowest
 
 # Load the data
 data = get_file()
@@ -28,10 +28,16 @@ data = get_file()
 C, T, S, files_info, targets_raw = extract_info(data[idx_file])
 files_info_backup = extract_info(data[idx_file])[3]
 targets = clean_target(targets_raw, files_info)
-print("Total targets: ", len(targets_raw))
-print("Achievable targets: ", len(targets))
 if(server_per_target <= 0): server_per_target = S
 
+if(debug_var):
+    file_name_list = ['a_example.in', 'b_narrow.in', 'c_urgent.in', 'd_typical.in', 'e_intriguing.in', 'f_big.in']
+    print("File: ", file_name_list[idx_file])
+    
+    print("Total targets: ", len(targets_raw))
+    print("Achievable targets: ", len(targets))
+    print("Total Servers: ", S)
+    
 # Sort targets by attribute. Targets is intended as the target file to compile
 targets = sort_target_by_attribute(targets, attribute, reverse = reverse_order) 
 
@@ -42,7 +48,7 @@ current_target = []
 if(debug_var):
     print("First target: {} - {}: {}".format(targets_keys[0], attribute, targets[targets_keys[0]][attribute]))
     print("First target: {} - {}: {}".format(targets_keys[-1], attribute, targets[targets_keys[-1]][attribute]))
-
+    
 # targets_keys = list(targets.keys()) 
 # idx_target = 2 
 # key_to_remove = []
@@ -50,6 +56,8 @@ if(debug_var):
 #     if(i != idx_target): key_to_remove.append(targets_keys[i])
     
 # for key in key_to_remove: del targets[key]
+
+
 
 #%%
 
@@ -203,7 +211,7 @@ while(True):
             # Extract leaf (files with no dependecies) from the tree
             possible_files = compilation_tree_list[idx_server].leaf_list
             
-            if(len(possible_files) == 0): # If I have only a 0 leaf this mean that I have finish the compilation of the target and server is free for new target or support work
+            if(len(possible_files) == 0): # If I have only 0 leaf this mean that I have finish the compilation of the target and server is free for new target or support work
                 del targets[current_target[idx_server]]   
                 del compilation_tree_dict[ current_target[idx_server]]
                 if(server_to_do[idx_server] == 2): current_target[idx_server] = ""
@@ -278,8 +286,8 @@ while(True):
                 # Add the file to the replication list
                 if current_elaboration[idx_server] not in replication_list: replication_list.append(current_elaboration[idx_server])
             
-            # Add the files to the compiled file in the server
-            files_compiled_per_server[idx_server].append(current_elaboration[idx_server])
+                # Add the files to the compiled file in the server
+                files_compiled_per_server[idx_server].append(current_elaboration[idx_server])
             
             # Create the list of all the leafs
             possible_files = []
@@ -303,26 +311,33 @@ while(True):
                 else:
                     # Check if all the dependencies are ok
                     # The condition inside the if is true only if all element of list 1 (dependencies_list) are inside the list 2 (list of compiled files of the server)
-                    if(all(file in files_info[tmp_file]['dependencies_list'] for file in files_compiled_per_server[idx_server])):
+                    # if(all(file in files_info[tmp_file]['dependencies_list'] for file in files_compiled_per_server[idx_server])):
+                    if(check_dependency(tmp_file, files_info, files_compiled_per_server[idx_server])):
                         idx_choosen_file = j
                         break
-                    else: # If not skip the server for the current iteration
+                    else: # If not skip the file 
                         continue 
                
             if(idx_choosen_file != -1): selected_file = possible_files_sorted[idx_choosen_file]
             
         
         if(idx_choosen_file != -1):
-            # Start compiling the selected file
-            current_elaboration[idx_server] = selected_file
-            time_for_current_elaboration[idx_server] = files_info[selected_file]['c']
-            server_to_do[idx_server] = 0
-            
-            # Update solution string
-            solution_string += "{} {}\n".format(current_elaboration[idx_server], idx_server) # Update solution string
-            
-            if(debug_var): print(t, "\tServer: {} - File CHOOSEN: {}\n".format(idx_server, selected_file))
-            
+            # TODO CHECK THIS CONDITION... check if all the dependencies are ok before select the file
+            if(check_dependency(selected_file, files_info, files_compiled_per_server[idx_server])):
+                # Start compiling the selected file
+                current_elaboration[idx_server] = selected_file
+                time_for_current_elaboration[idx_server] = files_info[selected_file]['c']
+                server_to_do[idx_server] = 0
+                
+                # Update solution string
+                solution_string += "{} {}\n".format(current_elaboration[idx_server], idx_server) # Update solution string
+                
+                if(debug_var): print(t, "\tServer: {} - File CHOOSEN: {}\n".format(idx_server, selected_file))
+            else:
+                server_to_do[idx_server] = 1
+                if(debug_var): print(t, "\tServer: {} - File ERROR: {}\n".format(idx_server, selected_file))
+                raise Exception("ERROR WITH DEPENDENCY")
+                
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     
     # Advance time
@@ -371,3 +386,7 @@ instance = loadInstance("final_round_2019/{}".format(file_list[idx_file]))
 solution = loadSolution("solution.txt", instance)
 print("Score =", evalCheck(instance, solution))
 
+
+# instance = loadInstance("final_round_2019/d_typical.in".format(file_list[idx_file]))
+# solution = loadSolution("solution/solution_d_typical_1.txt", instance)
+# print("Score =", evalCheck(instance, solution))
