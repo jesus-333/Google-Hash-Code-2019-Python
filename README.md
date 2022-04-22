@@ -1,5 +1,5 @@
 # Google Hash Code 2019 Python
- Solution to the google hash code 2019 in Python. The total score is 3570614 divided has in the table below.
+ Solution to the google hash code 2019 in Python. The total score is 3570614 divided as in the table below.
 
 
 |       File      |  Score  |
