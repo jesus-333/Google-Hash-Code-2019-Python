@@ -11,7 +11,7 @@
 | e_intriguing.in |    1    |
 |     f_big.in    |  840971 |
 
-The solution is based on tree data structure.
+The solution is based on tree data structure. For each target I create a tree of dependencies. Then each target is assigned to a server (so each server is dedicated to a specific target). The file compiled are the leaf of the tree (i.e. the file without dependencies). When a file is compiled the relative leaf is removed from the compilation tree. When a file is replicated it is removed from all the compilation tree. If there are more server than target the extra server are assigned to compiled random file (alternatively you can choose to compile the file with the highest compilation time between all the file in all the compilation tree that is currently nor compiling or replicating)
 
 ## Requirements
 The solver 3 (the final one) require the [networkx](https://networkx.org/) package and the [scipy](https://scipy.org/) package to work.
