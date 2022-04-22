@@ -70,9 +70,11 @@ def extract_info(file):
 
 
 def clean_target(targets, files_info):
+    """
+    Remove all the target that have a compilation time higher than the deadline
+    """
     new_targets = {}
     for file in targets:
         if(targets[file]['deadline'] > files_info[file]['c']): new_targets[file] = targets[file]
        
     return new_targets
-        

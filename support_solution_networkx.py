@@ -42,11 +42,10 @@ class compilationTreeNX():
         if(use_dense_matrix): self.adj_mat = self.adj_mat.todense()
                 
     
-    def update_leaf(self):
+    def update_leaf(self, update_adj_mat = True):
         tmp_node_list = list(self.G.nodes())
         
-        # TODO check if syntax is correct
-        # n_dependencies_per_node = np.squeeze(np.asarray(np.sum(self.adj_mat, 0)))
+        if(update_adj_mat): self.update_adjacency_matrix(True)
         n_dependencies_per_node = np.asarray(np.sum(self.adj_mat, 0))[0]
         
         self.leaf_list = []

@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 debug_var = True
 
 idx_file = 4
+server_per_target = 1
 
 # Load the data
 data = get_file()
@@ -28,13 +29,14 @@ print("Achievable targets: ", len(targets))
 # Sort targets by attribute. Targets is intended as the target file to compile
 # attribute = 'points' 
 attribute = 'deadline'
-targets = sort_target_by_attribute(targets, attribute, reverse = False) 
+targets = sort_target_by_attribute(targets, attribute, reverse = True) 
 targets_keys = list(targets.keys()) 
 
 #%%
 
-# Visualize a compilation tree of a target (For debugging)
+# Variable to track the targets that are currenlty compiling
 targets_keys = list(targets.keys())
+current_target = []
 
 # Create the compilation tree for each target file
 compilation_file_list_per_target = create_compilation_tree_per_targets(files_info, targets)
@@ -45,11 +47,12 @@ for target in targets: compilation_tree_dict[target] = compilationTreeNX(target,
 # compilation_tree_list = [compilationTreeNX(target, compilation_file_list_per_target[target], files_info) for target in targets]
 
 compilation_tree_list = []
-for idx_server in range(S): 
+for idx_server in range(server_per_target): 
     target_file = targets_keys.pop(0)
     compilation_tree_list.append(compilationTreeNX(target_file, compilation_file_list_per_target[target_file], files_info))
+    current_target.append(target_file)
     
-    del compilation_tree_dict[target_file]
+    # del compilation_tree_dict[target_file]
     
     if(debug_var): print(0, "\tServer: {} - NEW Target assign: {}".format(idx_server, target_file))
     
@@ -78,15 +81,17 @@ current_elaboration = [None for _ in range(S)]
 # Time remaining for the compilation of each file
 time_for_current_elaboration = np.zeros(S)
 
-# Vector that indicate wich file have finish the compilation of the current file. 1 = Finish, 0 = Currently compiling
-server_to_do = np.ones(S)
+# Vector that indicate wich file have finish the compilation of the current file. 
+# 0 = Currently compiling, 1 = Finish compile file, 2 = Finish early due to target removal
+server_to_do = np.zeros(S)
+server_to_do[0:server_per_target] = 1
 
 # Variable that indicate if there are extra server. 
 # N.b. Each server is dedicated to a single target but there can been more server that target. 
 # This variable is used to track the free server in this situations
 # 1 = free server, 0 = server assign to a target
 free_server = np.ones(S)
-free_server[0:len(targets)] = 0
+free_server[0:server_per_target] = 0
 
 # Replication list
 replication_list = []
@@ -158,7 +163,7 @@ while(True):
         # Choose the leaf (file) with the minor compilation time that is not compiling (in any server) or replicating 
         # If all the leaf (file) are currently compiling/replicating choose the one with the lowest compilation time
         # In this case there cannot be dependency problem because each server is paired with a specific compilation tree
-        if(server_to_do[idx_server] == 1 and free_server[idx_server] == 0):
+        if(server_to_do[idx_server] >= 1 and free_server[idx_server] == 0):
             if(debug_var and current_elaboration[idx_server] != ''): print(t, "\tServer: {} - File END: {}".format(idx_server, current_elaboration[idx_server]))
             
             if(t != 0): 
@@ -173,18 +178,24 @@ while(True):
                     files_compiled_per_server[idx_server].append(current_elaboration[idx_server])
                     
                     # Remove the file from the current compilation tree
-                    compilation_tree_list[idx_server].remove_file(current_elaboration[idx_server])
+                    if(server_to_do[idx_server] == 1):
+                        compilation_tree_list[idx_server].remove_file(current_elaboration[idx_server])
             
             # Extract leaf (files with no dependecies) from the tree
             possible_files = compilation_tree_list[idx_server].leaf_list
             
             if(len(possible_files) == 0): # If I have only a 0 leaf this mean that I have finish the compilation of the target and server is free for new target or support work
-                del targets[current_elaboration[idx_server]]    
+                del targets[current_target[idx_server]]   
+                del compilation_tree_dict[ current_target[idx_server]]
+                if(server_to_do[idx_server] == 2): current_target[idx_server] = ""
+            
                 if(debug_var): print(t, "\t\tTarget complete")
             
                 if(len(targets_keys) > 0): # If there are more targets available assign the new target to the server
                     target_file = targets_keys.pop(0)
                     compilation_tree_list[idx_server] = compilation_tree_dict[target_file] 
+                    current_target[idx_server] = target_file
+                    
                     if(debug_var): print(t, "\tServer: {} - NEW Target assign: {}".format(idx_server, target_file))
                     
                     # Clean the new compilation tree of the file already compiled in the server
@@ -206,8 +217,11 @@ while(True):
                     server_to_do[idx_server] = 0
                     
                 else: # If there aren't any new target set the server as free and use it for support task
-                    if(len(targets) == 0): break # In this case I also finish the target so I stop here
-                    else: free_server[idx_server] = 1 # Otherwise set the server as free
+                    if(len(targets) == 0): # In this case I also finish the target so I stop here. N.b. A target is removed from the targets dict only when its compilation is finished
+                        break 
+                    else: # Otherwise set the server as free. This happen as long as there is at least one target being compiled
+                        free_server[idx_server] = 1 
+                        current_target[idx_server] = ""
                 
             elif(len(possible_files) == 1): # If I have only 1 leaf (file) I'm forced to select it
                 idx_choosen_file = 0
@@ -284,12 +298,28 @@ while(True):
             
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     
+    # Advance time
     t += 1
     time_for_current_elaboration -= 1
     
     # Check the server that has finish the compilation of the current file and set their flag to 1
     server_to_do[np.where(time_for_current_elaboration <= 0)[0]] = 1
     
+    # Check if a target surpass the deadline and evenntuallt free the server
+    for idx_server in range(len(current_target)):
+        target = current_target[idx_server]
+        if(target in list(targets_raw.keys())): # Check if the target exist in the dictionary (To avoid error when a server is set free from target)
+            if(t > targets_raw[target]['deadline']): # Check if the time surpass the deadline
+                if(debug_var): print(t, "\tServer {} - EARLY Remove target: {}".format(idx_server, target))    
+            
+                # Remove all node from the compilation tree so the next iteration a new target/file will be assigned
+                node_list = list(compilation_tree_list[idx_server].G.nodes())
+                for node in node_list: compilation_tree_list[idx_server].remove_file(node)
+                
+                
+                # Set the server as iddle
+                server_to_do[idx_server] = 2 # N.B. The flag 2 means that has finish early and has not to remove the file currently compiling from the compilation tree since all the compilation tree has been removed
+                
     # Condition to finish the cycle
     # A target is removed from the list only when it is compiled. So the cycle finish only when all the target are compiled
     if(len(targets) == 0): break
