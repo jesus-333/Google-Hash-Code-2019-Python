@@ -14,12 +14,12 @@ import random
 
 debug_var = True
 
-idx_file = 0
+idx_file = 5
 server_per_target = -1
 random_selection_free_server = True
-# attribute = 'points' 
-attribute = 'deadline'
-reverse_order = False # IF true the target are sorted from the one with the highest attribute to the one with the lowest
+attribute = 'points' 
+# attribute = 'deadline'
+reverse_order = True # IF true the target are sorted from the one with the highest attribute to the one with the lowest
 
 # Load the data
 data = get_file()
